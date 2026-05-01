@@ -606,3 +606,94 @@
   color: var(--on-surface);
   margin-bottom: var(--space-sm);
 }
+
+/* ─── Soil Section ──────────────────────────────────────────────── */
+.soil-card {
+  grid-column: span 2;
+}
+
+.soil-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-md);
+}
+
+.soil-source-tag {
+  display: inline-block;
+  font-family: 'Space Grotesk', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+.soil-source-tag--manual {
+  background: var(--surface-container-high);
+  color: var(--on-surface-variant);
+}
+
+.soil-source-tag--auto {
+  background: var(--primary-fixed);
+  color: var(--primary);
+}
+
+.soil-source-tag--estimated {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.soil-card--autofilled {
+  border: 2px solid var(--primary-container);
+  box-shadow: 0 0 0 4px var(--primary-fixed);
+}
+
+.soilgrids-info {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--primary-fixed);
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.soil-texture-bar {
+  display: flex;
+  height: 24px;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-top: var(--space-sm);
+  border: 1px solid var(--outline-variant);
+}
+
+.soil-texture-bar__segment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Space Grotesk', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  transition: width 0.8s ease;
+}
+
+.soil-texture-bar__segment--clay { background: #795548; }
+.soil-texture-bar__segment--silt { background: #a1887f; }
+.soil-texture-bar__segment--sand { background: #d4a017; }
+
+.btn--sm {
+  padding: 6px 14px;
+  font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  .soil-card { grid-column: span 1; }
+  .soil-grid { grid-template-columns: repeat(2, 1fr); }
+}

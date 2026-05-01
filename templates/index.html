@@ -81,23 +81,46 @@
           </div>
         </div>
 
-        <!-- N-P-K -->
-        <div class="card">
-          <h2 class="headline-md" style="margin-bottom:var(--space-md)"><span class="material-icons-outlined" style="vertical-align:middle;margin-right:8px;color:var(--soil-brown)">science</span>Soil N-P-K</h2>
-          <div class="flex flex-col gap-md">
-            <div class="input-group"><label for="input-n">Nitrogen (N)</label><input type="number" id="input-n" class="input-field" placeholder="e.g. 90" min="0" max="200" value="90"></div>
-            <div class="input-group"><label for="input-p">Phosphorus (P)</label><input type="number" id="input-p" class="input-field" placeholder="e.g. 42" min="0" max="200" value="42"></div>
-            <div class="input-group"><label for="input-k">Potassium (K)</label><input type="number" id="input-k" class="input-field" placeholder="e.g. 43" min="0" max="200" value="43"></div>
+        <!-- Soil Data (Manual or SoilGrids Auto-Fill) -->
+        <div class="card soil-card" id="soil-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:var(--space-sm)">
+            <h2 class="headline-md"><span class="material-icons-outlined" style="vertical-align:middle;margin-right:8px;color:var(--soil-brown)">science</span>Soil Parameters</h2>
+            <button type="button" class="btn btn--secondary btn--sm" id="btn-soilgrids" onclick="autoFillSoilGrids()" style="font-size:13px" disabled title="Resolve location first">
+              <span class="material-icons-outlined" style="font-size:16px">auto_fix_high</span> Auto-Fill from SoilGrids
+            </button>
           </div>
-        </div>
+          <div id="soil-mode-label" class="body-sm" style="color:var(--on-surface-variant);margin:var(--space-sm) 0"><span class="material-icons-outlined" style="font-size:14px;vertical-align:middle">edit</span> Manual Entry — enter your soil test values or use Auto-Fill after resolving location</div>
+          <div id="soilgrids-info" style="display:none"></div>
 
-        <!-- pH -->
-        <div class="card">
-          <h2 class="headline-md" style="margin-bottom:var(--space-md)"><span class="material-icons-outlined" style="vertical-align:middle;margin-right:8px;color:var(--gold)">biotech</span>Soil Profile</h2>
-          <div class="input-group">
-            <label for="input-ph">Soil pH</label>
-            <input type="number" id="input-ph" class="input-field" placeholder="e.g. 6.5" min="0" max="14" step="0.1" value="6.5">
+          <div class="soil-grid">
+            <div class="input-group">
+              <label for="input-n">Nitrogen (N) <span class="soil-source-tag" id="tag-n"></span></label>
+              <input type="number" id="input-n" class="input-field" placeholder="mg/kg" min="0" max="200" value="">
+            </div>
+            <div class="input-group">
+              <label for="input-p">Phosphorus (P) <span class="soil-source-tag" id="tag-p"></span></label>
+              <input type="number" id="input-p" class="input-field" placeholder="mg/kg" min="0" max="200" value="">
+            </div>
+            <div class="input-group">
+              <label for="input-k">Potassium (K) <span class="soil-source-tag" id="tag-k"></span></label>
+              <input type="number" id="input-k" class="input-field" placeholder="mg/kg" min="0" max="200" value="">
+            </div>
+            <div class="input-group">
+              <label for="input-ph">Soil pH <span class="soil-source-tag" id="tag-ph"></span></label>
+              <input type="number" id="input-ph" class="input-field" placeholder="e.g. 6.5" min="0" max="14" step="0.1" value="">
+            </div>
           </div>
+
+          <!-- SoilGrids Extras (hidden until auto-fill) -->
+          <div id="soil-extras" style="display:none;margin-top:var(--space-md)">
+            <div class="enrichment-grid" id="soil-enrichment-grid">
+              <div class="enrichment-tile"><div class="label-caps enrichment-tile__label">Soil Type</div><div class="enrichment-tile__value" id="val-soil-type" style="font-size:1.1rem;color:var(--soil-brown)">--</div></div>
+              <div class="enrichment-tile"><div class="label-caps enrichment-tile__label">Organic Carbon</div><div><span class="enrichment-tile__value" id="val-soc" style="color:var(--growth-green)">--</span><span class="enrichment-tile__unit">g/kg</span></div></div>
+              <div class="enrichment-tile"><div class="label-caps enrichment-tile__label">CEC</div><div><span class="enrichment-tile__value" id="val-cec" style="color:var(--gold)">--</span><span class="enrichment-tile__unit">cmol/kg</span></div></div>
+            </div>
+            <div class="soil-texture-bar" id="soil-texture-bar"></div>
+          </div>
+
           <div style="margin-top:var(--space-lg)">
             <button type="submit" class="btn btn--primary" style="width:100%" id="btn-analyze">
               <span class="material-icons-outlined" style="font-size:20px">psychology</span> Generate Strategic Recommendation

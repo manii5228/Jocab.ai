@@ -97,16 +97,19 @@ class CropPredictor:
         # ─── Train XGBoost ─────────────────────────────────────────
         num_classes = len(self.label_encoder.classes_)
         self.model = xgb.XGBClassifier(
-            n_estimators=300,
-            max_depth=8,
-            learning_rate=0.1,
+            n_estimators=150,           # Reduced from 300
+            max_depth=5,                # Reduced from 8 to prevent deep memorization
+            learning_rate=0.08,
             objective="multi:softprob",
             num_class=num_classes,
             eval_metric="mlogloss",
             random_state=42,
-            subsample=0.8,
-            colsample_bytree=0.8,
-            min_child_weight=3,
+            subsample=0.7,              # Train on 70% of rows per tree
+            colsample_bytree=0.7,       # Use 70% of columns per tree
+            min_child_weight=5,         # Require more samples in leaf nodes
+            gamma=1.5,                  # Prune trees (min loss reduction)
+            reg_alpha=0.5,              # L1 regularization
+            reg_lambda=2.0,             # L2 regularization
         )
 
         self.model.fit(

@@ -11,6 +11,7 @@ from services.mandi import MandiService
 from services.predictor import CropPredictor
 from services.strategy import StrategyEngine
 from services.nasa_power import NasaPowerService
+from services.soilgrids import SoilGridsService
 import traceback
 
 app = Flask(__name__)
@@ -24,6 +25,7 @@ mandi_service = MandiService(Config.DATAGOV_API_KEY)
 predictor = CropPredictor(Config.MODEL_PATH, Config.LABEL_ENCODER_PATH)
 strategy_engine = StrategyEngine(Config)
 nasa_power_service = NasaPowerService()
+soilgrids_service = SoilGridsService()
 
 
 # ─── Page Routes ───────────────────────────────────────────────────
@@ -77,6 +79,23 @@ def nasa_power():
     result = nasa_power_service.fetch_historical(lat, lon)
     if result is None:
         return jsonify({"error": "NASA POWER service returned no data"}), 503
+    if "error" in result:
+        return jsonify(result), 503
+    return jsonify(result)
+
+
+@app.route("/api/soilgrids", methods=["POST"])
+def soilgrids():
+    """Fetch soil properties from ISRIC SoilGrids API (free, no key)."""
+    data = request.get_json()
+    lat = data.get("lat")
+    lon = data.get("lon")
+    if lat is None or lon is None:
+        return jsonify({"error": "lat and lon are required"}), 400
+
+    result = soilgrids_service.fetch_soil_data(lat, lon)
+    if result is None:
+        return jsonify({"error": "SoilGrids service returned no data"}), 503
     if "error" in result:
         return jsonify(result), 503
     return jsonify(result)

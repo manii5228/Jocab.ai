@@ -101,6 +101,11 @@ async function resolveLocation() {
 
     showToast(`Live weather loaded for ${weather.city_name || input}`, 'success');
 
+    // Enable SoilGrids Auto-Fill button
+    const soilBtn = document.getElementById('btn-soilgrids');
+    soilBtn.disabled = false;
+    soilBtn.title = 'Fetch soil data from ISRIC SoilGrids for this location';
+
     // Step 3: Fetch NASA POWER historical data (async, non-blocking)
     fetchNasaPower(geo.lat, geo.lon);
 
@@ -451,9 +456,98 @@ function renderMarketEquilibriumChart(profitIndex) {
   });
 }
 
+// ═══ SoilGrids Auto-Fill ═════════════════════════════════════════
+async function autoFillSoilGrids() {
+  if (!state.location) {
+    showToast('Resolve location first', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btn-soilgrids');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Fetching soil...';
+
+  try {
+    const soil = await apiPost('/soilgrids', {
+      lat: state.location.lat,
+      lon: state.location.lon,
+    });
+    state.soilData = soil;
+
+    // Fill input fields
+    document.getElementById('input-n').value = soil.N;
+    document.getElementById('input-p').value = soil.P;
+    document.getElementById('input-k').value = soil.K;
+    document.getElementById('input-ph').value = soil.ph;
+
+    // Source tags
+    setSourceTag('tag-n', 'auto', 'SoilGrids');
+    setSourceTag('tag-p', 'estimated', 'Estimated');
+    setSourceTag('tag-k', 'estimated', 'Estimated');
+    setSourceTag('tag-ph', 'auto', 'SoilGrids');
+
+    // Mode label
+    const modeLabel = document.getElementById('soil-mode-label');
+    modeLabel.innerHTML = `<span class="material-icons-outlined" style="font-size:14px;vertical-align:middle">auto_fix_high</span> Auto-filled from <strong>ISRIC SoilGrids v2.0</strong> (0-30cm topsoil average) — you can override any value`;
+    modeLabel.style.color = 'var(--primary)';
+
+    // Info banner
+    const infoDiv = document.getElementById('soilgrids-info');
+    infoDiv.style.display = 'block';
+    infoDiv.className = 'soilgrids-info';
+    infoDiv.innerHTML = `
+      <span class="material-icons-outlined">info</span>
+      <div>
+        <strong>N</strong>: ${soil.estimation_notes.N}<br>
+        <strong>P</strong>: ${soil.estimation_notes.P}<br>
+        <strong>K</strong>: ${soil.estimation_notes.K}<br>
+        <strong>pH</strong>: ${soil.estimation_notes.ph}
+      </div>`;
+
+    // Highlight card
+    document.getElementById('soil-card').classList.add('soil-card--autofilled');
+
+    // Show extras
+    document.getElementById('soil-extras').style.display = 'block';
+    document.getElementById('val-soil-type').textContent = soil.soil_type;
+    animateValue('val-soc', soil.organic_carbon_g_kg);
+    animateValue('val-cec', soil.cec_cmol_kg);
+
+    // Texture bar
+    const texBar = document.getElementById('soil-texture-bar');
+    texBar.innerHTML = `
+      <div class="soil-texture-bar__segment soil-texture-bar__segment--clay" style="width:${soil.clay_pct}%">Clay ${soil.clay_pct}%</div>
+      <div class="soil-texture-bar__segment soil-texture-bar__segment--silt" style="width:${soil.silt_pct}%">Silt ${soil.silt_pct}%</div>
+      <div class="soil-texture-bar__segment soil-texture-bar__segment--sand" style="width:${soil.sand_pct}%">Sand ${soil.sand_pct}%</div>`;
+
+    showToast(`Soil data loaded: ${soil.soil_type} (${soil.source})`, 'success');
+
+  } catch (err) {
+    showToast('SoilGrids: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-icons-outlined" style="font-size:16px">auto_fix_high</span> Auto-Fill from SoilGrids';
+  }
+}
+
+function setSourceTag(tagId, type, label) {
+  const tag = document.getElementById(tagId);
+  if (!tag) return;
+  tag.className = `soil-source-tag soil-source-tag--${type}`;
+  tag.textContent = label;
+}
+
 // ═══ Init ═════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('input-location').addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); resolveLocation(); }
+  });
+
+  // Mark fields as manual when user types
+  ['input-n', 'input-p', 'input-k', 'input-ph'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+      const field = id.replace('input-', '');
+      setSourceTag('tag-' + field, 'manual', 'Manual');
+    });
   });
 });
