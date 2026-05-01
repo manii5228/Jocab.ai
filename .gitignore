@@ -18,6 +18,10 @@ Thumbs.db
 # Model artifacts
 models/*.pkl
 models/*.joblib
+models/*.json
+
+# Dataset (too large for git)
+dataset/
 
 # Logs
 *.log

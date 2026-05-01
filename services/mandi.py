@@ -1,146 +1,168 @@
 """
-Mandi Price Service — Fetches live market prices from Data.gov.in
-and provides intelligent fallback pricing.
+Mandi Price Service — Fetches LIVE market prices from Data.gov.in API.
+NO hardcoded fallback prices. Returns proper errors when API fails.
 """
 import requests
-import random
 
 
 class MandiService:
-    """Fetch live commodity prices from Indian government Mandi APIs."""
+    """Fetch live commodity prices from Indian government Mandi APIs — real data only."""
 
     BASE_URL = "https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070"
 
-    # Realistic fallback prices (₹/quintal) based on 2024–2025 MSP & market data
-    FALLBACK_PRICES = {
-        "rice": {"price": 2320, "mandi": "Karnal", "state": "Haryana", "trend": "stable"},
-        "wheat": {"price": 2275, "mandi": "Indore", "state": "Madhya Pradesh", "trend": "rising"},
-        "maize": {"price": 2090, "mandi": "Davangere", "state": "Karnataka", "trend": "stable"},
-        "cotton": {"price": 7020, "mandi": "Rajkot", "state": "Gujarat", "trend": "falling"},
-        "sugarcane": {"price": 315, "mandi": "Muzaffarnagar", "state": "Uttar Pradesh", "trend": "stable"},
-        "jute": {"price": 5050, "mandi": "Kolkata", "state": "West Bengal", "trend": "rising"},
-        "coffee": {"price": 9800, "mandi": "Chikmagalur", "state": "Karnataka", "trend": "rising"},
-        "coconut": {"price": 3200, "mandi": "Kozhikode", "state": "Kerala", "trend": "stable"},
-        "apple": {"price": 5500, "mandi": "Shimla", "state": "Himachal Pradesh", "trend": "seasonal"},
-        "mango": {"price": 4200, "mandi": "Ratnagiri", "state": "Maharashtra", "trend": "seasonal"},
-        "banana": {"price": 1800, "mandi": "Jalgaon", "state": "Maharashtra", "trend": "stable"},
-        "grapes": {"price": 6500, "mandi": "Nasik", "state": "Maharashtra", "trend": "seasonal"},
-        "watermelon": {"price": 1200, "mandi": "Medak", "state": "Telangana", "trend": "seasonal"},
-        "muskmelon": {"price": 1800, "mandi": "Kolar", "state": "Karnataka", "trend": "seasonal"},
-        "orange": {"price": 3500, "mandi": "Nagpur", "state": "Maharashtra", "trend": "seasonal"},
-        "papaya": {"price": 1500, "mandi": "Coimbatore", "state": "Tamil Nadu", "trend": "stable"},
-        "pomegranate": {"price": 8500, "mandi": "Solapur", "state": "Maharashtra", "trend": "rising"},
-        "lentil": {"price": 6200, "mandi": "Indore", "state": "Madhya Pradesh", "trend": "stable"},
-        "blackgram": {"price": 6950, "mandi": "Guntur", "state": "Andhra Pradesh", "trend": "rising"},
-        "mungbean": {"price": 8558, "mandi": "Bikaner", "state": "Rajasthan", "trend": "rising"},
-        "mothbeans": {"price": 5725, "mandi": "Jodhpur", "state": "Rajasthan", "trend": "stable"},
-        "pigeonpeas": {"price": 7000, "mandi": "Gulbarga", "state": "Karnataka", "trend": "rising"},
-        "kidneybeans": {"price": 9200, "mandi": "Srinagar", "state": "Jammu & Kashmir", "trend": "stable"},
-        "chickpea": {"price": 5440, "mandi": "Jaipur", "state": "Rajasthan", "trend": "rising"},
-        "groundnut": {"price": 5550, "mandi": "Junagadh", "state": "Gujarat", "trend": "stable"},
-        "soybean": {"price": 4600, "mandi": "Indore", "state": "Madhya Pradesh", "trend": "stable"},
-        "mustard": {"price": 5650, "mandi": "Alwar", "state": "Rajasthan", "trend": "rising"},
-        "sesame": {"price": 7800, "mandi": "Rajkot", "state": "Gujarat", "trend": "rising"},
-        "turmeric": {"price": 14500, "mandi": "Nizamabad", "state": "Telangana", "trend": "rising"},
-        "ginger": {"price": 4200, "mandi": "Cochin", "state": "Kerala", "trend": "stable"},
-        "chilli": {"price": 12500, "mandi": "Guntur", "state": "Andhra Pradesh", "trend": "rising"},
-        "black pepper": {"price": 55000, "mandi": "Kochi", "state": "Kerala", "trend": "rising"},
-        "cardamom": {"price": 120000, "mandi": "Bodinayakanur", "state": "Tamil Nadu", "trend": "rising"},
-        "coriander": {"price": 7200, "mandi": "Kota", "state": "Rajasthan", "trend": "stable"},
-        "millets": {"price": 2500, "mandi": "Bellary", "state": "Karnataka", "trend": "rising"},
-        "sorghum": {"price": 3180, "mandi": "Solapur", "state": "Maharashtra", "trend": "stable"},
-        "barley": {"price": 1850, "mandi": "Jaipur", "state": "Rajasthan", "trend": "stable"},
-        "tobacco": {"price": 14500, "mandi": "Guntur", "state": "Andhra Pradesh", "trend": "stable"},
-        "cowpea": {"price": 6800, "mandi": "Jodhpur", "state": "Rajasthan", "trend": "rising"},
-        "pigeon pea": {"price": 7000, "mandi": "Gulbarga", "state": "Karnataka", "trend": "rising"},
-        "pearl millet": {"price": 2500, "mandi": "Jodhpur", "state": "Rajasthan", "trend": "stable"},
-    }
-
     def __init__(self, api_key: str):
         self.api_key = api_key
+        if not api_key or api_key.startswith("your_"):
+            print("[MandiService] WARNING: No valid Data.gov.in API key configured!")
 
     def fetch_prices(self, crops: list[str]) -> dict:
         """
-        Fetch live Mandi prices for a list of crops.
+        Fetch live Mandi prices for a list of crops from Data.gov.in.
 
-        Returns: {crop_name: {price, mandi, state, trend, volatility, supply_level}}
+        Returns: {crop_name: {price, mandi, state, min_price, max_price, ...}}
         """
+        if not self.api_key or self.api_key.startswith("your_"):
+            return {c.lower(): {"error": "Data.gov.in API key not configured. Add it to .env."} for c in crops}
+
         results = {}
         for crop in crops:
             crop_lower = crop.lower().strip()
-            # Try live API first
-            live = self._fetch_live(crop_lower)
-            if live:
-                results[crop_lower] = live
-            else:
-                results[crop_lower] = self._get_fallback(crop_lower)
+            result = self._fetch_single(crop_lower)
+            results[crop_lower] = result
         return results
 
-    def _fetch_live(self, crop: str) -> dict | None:
-        """Attempt to fetch live price from Data.gov.in API."""
-        if not self.api_key or self.api_key == "your_datagov_api_key_here":
-            return None
+    def _fetch_single(self, crop: str) -> dict:
+        """Fetch live price for a single crop from Data.gov.in."""
+        # Map common crop names to Data.gov.in commodity names
+        commodity_name = self._map_crop_name(crop)
 
         try:
             response = requests.get(self.BASE_URL, params={
                 "api-key": self.api_key,
                 "format": "json",
-                "limit": 5,
-                "filters[commodity]": crop.title(),
-            }, timeout=10)
+                "limit": 10,
+                "filters[commodity]": commodity_name,
+            }, timeout=15)
 
             if response.status_code == 200:
                 data = response.json()
                 records = data.get("records", [])
-                if records:
+
+                if records and len(records) > 0:
+                    # Get the most recent record
                     record = records[0]
-                    price = float(record.get("modal_price", 0))
+                    modal_price = self._safe_float(record.get("modal_price", 0))
+                    min_price = self._safe_float(record.get("min_price", 0))
+                    max_price = self._safe_float(record.get("max_price", 0))
+
+                    # Calculate volatility from price range
+                    volatility = 0.0
+                    if modal_price > 0:
+                        volatility = round((max_price - min_price) / modal_price, 3)
+
+                    # Infer trend from multiple records
+                    trend = self._infer_trend(records)
+
+                    # Infer supply level from number of active mandis
+                    supply_level = self._infer_supply(records)
+
                     return {
-                        "price": price,
+                        "price": modal_price,
+                        "min_price": min_price,
+                        "max_price": max_price,
                         "mandi": record.get("market", "Unknown"),
                         "state": record.get("state", "Unknown"),
-                        "trend": self._infer_trend(records),
-                        "volatility": round(random.uniform(0.05, 0.35), 2),
-                        "supply_level": random.choice(["low", "medium", "high", "glut"]),
-                        "live": True,
+                        "district": record.get("district", "Unknown"),
+                        "commodity": record.get("commodity", crop.title()),
+                        "variety": record.get("variety", "Other"),
+                        "arrival_date": record.get("arrival_date", "Unknown"),
+                        "trend": trend,
+                        "volatility": volatility,
+                        "supply_level": supply_level,
+                        "records_found": len(records),
+                        "source": "Data.gov.in (Live)",
                     }
+                else:
+                    return {
+                        "error": f"No Mandi data found for '{crop.title()}'. "
+                                 f"Searched as '{commodity_name}'.",
+                        "price": 0,
+                        "source": "Data.gov.in (No records)",
+                    }
+
+            elif response.status_code == 401:
+                return {"error": "Invalid Data.gov.in API key.", "price": 0}
+            else:
+                return {
+                    "error": f"Data.gov.in API error (HTTP {response.status_code})",
+                    "price": 0,
+                }
+
+        except requests.Timeout:
+            return {"error": "Data.gov.in API timed out.", "price": 0}
+        except requests.ConnectionError:
+            return {"error": "Cannot connect to Data.gov.in. Check internet.", "price": 0}
         except requests.RequestException as e:
-            print(f"[MandiService] Error fetching {crop}: {e}")
+            return {"error": f"Mandi API error: {str(e)}", "price": 0}
 
-        return None
-
-    def _get_fallback(self, crop: str) -> dict:
-        """Return intelligent fallback pricing with simulated variance."""
-        base = self.FALLBACK_PRICES.get(crop, {
-            "price": 3000, "mandi": "Local Mandi", "state": "India", "trend": "stable"
-        })
-
-        # Add realistic variance ±8%
-        variance = random.uniform(-0.08, 0.08)
-        price = round(base["price"] * (1 + variance))
-
-        return {
-            "price": price,
-            "mandi": base["mandi"],
-            "state": base["state"],
-            "trend": base["trend"],
-            "volatility": round(random.uniform(0.05, 0.30), 2),
-            "supply_level": random.choice(["low", "medium", "high"]),
-            "live": False,
+    def _map_crop_name(self, crop: str) -> str:
+        """Map internal crop names to Data.gov.in commodity names."""
+        mapping = {
+            "rice": "Rice", "wheat": "Wheat", "maize": "Maize",
+            "sorghum": "Jowar(Sorghum)", "cotton": "Cotton",
+            "sugarcane": "Sugarcane", "jute": "Jute",
+            "groundnut": "Groundnut", "soyabean": "Soyabean",
+            "cowpea": "Cowpea", "bengalgram": "Bengal Gram(Gram)(Whole)",
+            "blackgram": "Black Gram (Urd Beans)(Whole)",
+            "greengram": "Green Gram (Moong)(Whole)",
+            "redgram": "Arhar (Tur/Red Gram)(Whole)",
+            "sunflower": "Sunflower", "onion": "Onion",
+            "tomato": "Tomato", "chillies": "Chillies(Green)",
+            "cabbage": "Cabbage", "cauliflower": "Cauliflower",
+            "brinjal": "Brinjal", "cucumber": "Cucumber(Kheera)",
+            "watermelon": "Water Melon", "muskmelon": "Musk Melon",
+            "carrot": "Carrot", "peas": "Peas(Green)",
+            "pumpkin": "Pumpkin", "radish": "Raddish",
+            "beetroot": "Beetroot", "sweet potato": "Sweet Potato",
+            "pearl millet": "Bajra(Pearl Millet/Cumbu)",
+            "ragi": "Ragi (Finger Millet)",
+            "gingely": "Gingelly(Sesame)",
+            "castor": "Castor Seed",
         }
+        return mapping.get(crop.lower(), crop.title())
+
+    def _safe_float(self, val) -> float:
+        """Safely convert value to float."""
+        try:
+            return round(float(val), 2)
+        except (ValueError, TypeError):
+            return 0.0
 
     def _infer_trend(self, records: list) -> str:
-        """Infer price trend from multiple records."""
+        """Infer price trend from multiple market records."""
         if len(records) < 2:
-            return "stable"
+            return "insufficient_data"
         try:
-            prices = [float(r.get("modal_price", 0)) for r in records[:5]]
-            avg_recent = sum(prices[:2]) / 2
-            avg_older = sum(prices[2:]) / max(len(prices[2:]), 1)
-            if avg_recent > avg_older * 1.05:
+            prices = [self._safe_float(r.get("modal_price", 0)) for r in records[:5]]
+            prices = [p for p in prices if p > 0]
+            if len(prices) < 2:
+                return "insufficient_data"
+            avg_first = sum(prices[:len(prices)//2]) / max(len(prices[:len(prices)//2]), 1)
+            avg_second = sum(prices[len(prices)//2:]) / max(len(prices[len(prices)//2:]), 1)
+            if avg_first > avg_second * 1.05:
                 return "rising"
-            elif avg_recent < avg_older * 0.95:
+            elif avg_first < avg_second * 0.95:
                 return "falling"
             return "stable"
         except (ValueError, ZeroDivisionError):
-            return "stable"
+            return "unknown"
+
+    def _infer_supply(self, records: list) -> str:
+        """Infer supply level from number of active mandis reporting."""
+        unique_mandis = len(set(r.get("market", "") for r in records))
+        if unique_mandis >= 8:
+            return "high"
+        elif unique_mandis >= 4:
+            return "medium"
+        else:
+            return "low"

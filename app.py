@@ -1,5 +1,6 @@
 """
 AgriSmart Strategic Portfolio — Main Flask Application
+All API keys loaded from .env (gitignored). No hardcoded secrets.
 """
 from flask import Flask, render_template, jsonify, request
 from flask_cors import CORS
@@ -9,6 +10,7 @@ from services.geocoder import GeocoderService
 from services.mandi import MandiService
 from services.predictor import CropPredictor
 from services.strategy import StrategyEngine
+from services.nasa_power import NasaPowerService
 import traceback
 
 app = Flask(__name__)
@@ -21,6 +23,7 @@ geocoder_service = GeocoderService()
 mandi_service = MandiService(Config.DATAGOV_API_KEY)
 predictor = CropPredictor(Config.MODEL_PATH, Config.LABEL_ENCODER_PATH)
 strategy_engine = StrategyEngine(Config)
+nasa_power_service = NasaPowerService()
 
 
 # ─── Page Routes ───────────────────────────────────────────────────
@@ -47,7 +50,7 @@ def geocode():
 
 @app.route("/api/weather", methods=["POST"])
 def weather():
-    """Fetch live weather data for coordinates."""
+    """Fetch LIVE weather data from OpenWeather API."""
     data = request.get_json()
     lat = data.get("lat")
     lon = data.get("lon")
@@ -56,13 +59,32 @@ def weather():
 
     result = weather_service.fetch(lat, lon)
     if result is None:
-        return jsonify({"error": "Weather service unavailable"}), 503
+        return jsonify({"error": "Weather service returned no data"}), 503
+    if "error" in result:
+        return jsonify(result), 503
+    return jsonify(result)
+
+
+@app.route("/api/nasa-power", methods=["POST"])
+def nasa_power():
+    """Fetch historical climate data from NASA POWER API (free, no key)."""
+    data = request.get_json()
+    lat = data.get("lat")
+    lon = data.get("lon")
+    if lat is None or lon is None:
+        return jsonify({"error": "lat and lon are required"}), 400
+
+    result = nasa_power_service.fetch_historical(lat, lon)
+    if result is None:
+        return jsonify({"error": "NASA POWER service returned no data"}), 503
+    if "error" in result:
+        return jsonify(result), 503
     return jsonify(result)
 
 
 @app.route("/api/predict", methods=["POST"])
 def predict():
-    """Run the XGBoost crop prediction pipeline."""
+    """Run XGBoost crop prediction on real trained model."""
     data = request.get_json()
     required = ["N", "P", "K", "temperature", "humidity", "ph", "rainfall"]
     missing = [f for f in required if f not in data]
@@ -79,14 +101,14 @@ def predict():
 
 @app.route("/api/strategy", methods=["POST"])
 def strategy():
-    """Full strategic pipeline: predict → enrich with mandi data → generate strategy."""
+    """Full strategic pipeline: predict → mandi prices → generate strategy."""
     data = request.get_json()
 
     try:
-        # Phase 2: Biological Inference
+        # Phase 2: Biological Inference (real XGBoost model)
         predictions = predictor.predict(data)
 
-        # Phase 3: Economic & Strategic Filtering
+        # Phase 3: Economic & Strategic Filtering (real Mandi API)
         crop_names = [p["crop"] for p in predictions["top_crops"]]
         mandi_prices = mandi_service.fetch_prices(crop_names)
         result = strategy_engine.generate(predictions, mandi_prices, data)
@@ -99,7 +121,7 @@ def strategy():
 
 @app.route("/api/mandi", methods=["POST"])
 def mandi_prices():
-    """Fetch live Mandi prices for specific crops."""
+    """Fetch LIVE Mandi prices from Data.gov.in."""
     data = request.get_json()
     crops = data.get("crops", [])
     if not crops:
@@ -107,6 +129,15 @@ def mandi_prices():
 
     prices = mandi_service.fetch_prices(crops)
     return jsonify(prices)
+
+
+@app.route("/api/model-metrics", methods=["GET"])
+def model_metrics():
+    """Return XGBoost training metrics — accuracy, F1, feature importance."""
+    metrics = predictor.get_metrics()
+    if metrics:
+        return jsonify(metrics)
+    return jsonify({"error": "Model metrics not available"}), 500
 
 
 if __name__ == "__main__":

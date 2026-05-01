@@ -36,7 +36,7 @@ class StrategyEngine:
             price_info = mandi_prices.get(crop, {})
             price = price_info.get("price", 0)
 
-            pi = round((confidence / 100) * (price / 1000), 2)
+            pi = round((confidence / 100) * (price / 1000), 2) if price > 0 else 0
             profit_index.append({
                 "crop": crop,
                 "confidence": confidence,
@@ -45,8 +45,10 @@ class StrategyEngine:
                 "trend": price_info.get("trend", "stable"),
                 "mandi": price_info.get("mandi", "Local"),
                 "state": price_info.get("state", "India"),
-                "volatility": price_info.get("volatility", 0.15),
+                "volatility": price_info.get("volatility", 0),
                 "supply_level": price_info.get("supply_level", "medium"),
+                "source": price_info.get("source", ""),
+                "error": price_info.get("error", ""),
             })
 
         # Sort by Profit Index (economic priority)
@@ -138,6 +140,7 @@ class StrategyEngine:
             "market_insights": market_insights,
             "feature_importance": feature_importance,
             "shap_explanation": shap_explanation,
+            "training_metrics": predictions.get("training_metrics", {}),
             "input_summary": {
                 "location": input_data.get("location", "Unknown"),
                 "N": input_data.get("N", 0),

@@ -52,7 +52,7 @@
             </div>
           </div>
           <div id="location-result" style="display:none"></div>
-          <!-- Enrichment tiles -->
+          <!-- Live Weather Enrichment tiles (OpenWeather API) -->
           <div class="enrichment-grid" id="enrichment-grid" style="display:none">
             <div class="enrichment-tile enrichment-tile--rain">
               <div class="label-caps enrichment-tile__label">Rainfall</div>
@@ -66,6 +66,18 @@
               <div class="label-caps enrichment-tile__label">Humidity</div>
               <div><span class="enrichment-tile__value" id="val-humidity">--</span><span class="enrichment-tile__unit">%</span></div>
             </div>
+          </div>
+          <div class="body-sm" id="weather-source" style="display:none;margin-top:var(--space-sm);color:var(--on-surface-variant)"></div>
+
+          <!-- NASA POWER Historical Data -->
+          <div id="nasa-power-section" style="display:none;margin-top:var(--space-lg)">
+            <div class="label-caps" style="color:var(--water-blue);margin-bottom:var(--space-sm)"><span class="material-icons-outlined" style="font-size:14px;vertical-align:middle">satellite_alt</span> NASA POWER Historical Climate</div>
+            <div class="enrichment-grid" id="nasa-grid">
+              <div class="enrichment-tile"><div class="label-caps enrichment-tile__label">Avg Annual Rainfall</div><div><span class="enrichment-tile__value" id="val-nasa-rainfall" style="color:var(--water-blue)">--</span><span class="enrichment-tile__unit">mm/yr</span></div></div>
+              <div class="enrichment-tile"><div class="label-caps enrichment-tile__label">Avg Temperature</div><div><span class="enrichment-tile__value" id="val-nasa-temp" style="color:#e65100">--</span><span class="enrichment-tile__unit">°C</span></div></div>
+              <div class="enrichment-tile"><div class="label-caps enrichment-tile__label">Avg Humidity</div><div><span class="enrichment-tile__value" id="val-nasa-humidity" style="color:var(--growth-green)">--</span><span class="enrichment-tile__unit">%</span></div></div>
+            </div>
+            <div class="body-sm" id="nasa-source" style="margin-top:var(--space-sm);color:var(--on-surface-variant)"></div>
           </div>
         </div>
 
