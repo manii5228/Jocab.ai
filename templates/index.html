@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgriSmart | Strategic Intelligence for Precision Agriculture</title>
+  <meta name="description" content="AgriSmart provides explainable AI-powered crop recommendations combining biological suitability, live market prices, and regenerative agriculture practices.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/design-system.css">
+  <link rel="stylesheet" href="/static/css/app.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- ═══ Top Navigation ═══ -->
+  <nav class="top-nav" id="top-nav">
+    <div class="top-nav__inner">
+      <a href="#" class="top-nav__brand" onclick="navigate('dashboard')">
+        <svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="14" fill="#1b4332"/><path d="M16 6c-2 4-6 8-6 12a6 6 0 0012 0c0-4-4-8-6-12z" fill="#a5d0b9"/><path d="M16 12v10M13 16h6" stroke="#1b4332" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <span class="top-nav__brand-name">AgriSmart</span>
+      </a>
+      <ul class="top-nav__links">
+        <li><a class="top-nav__link top-nav__link--active" data-page="dashboard" onclick="navigate('dashboard')"><span class="material-icons-outlined" style="font-size:18px">grid_view</span> Dashboard</a></li>
+        <li><a class="top-nav__link" data-page="market" onclick="navigate('market')"><span class="material-icons-outlined" style="font-size:18px">trending_up</span> Market</a></li>
+        <li><a class="top-nav__link" data-page="research" onclick="navigate('research')"><span class="material-icons-outlined" style="font-size:18px">query_stats</span> Research</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="app-container">
+    <!-- ═══ DASHBOARD PAGE ═══ -->
+    <section class="page-section page-section--active" id="page-dashboard">
+      <div class="section-header">
+        <h1 class="headline-lg section-header__title">Data Ingestion & Enrichment</h1>
+        <p class="body-md section-header__subtitle">Configure your field parameters and enrich with real-time atmospheric data to generate precision strategies.</p>
+      </div>
+
+      <form id="ingestion-form" class="ingestion-form" onsubmit="return handleSubmit(event)">
+        <!-- Location -->
+        <div class="card location-card">
+          <h2 class="headline-md" style="margin-bottom:var(--space-md)"><span class="material-icons-outlined" style="vertical-align:middle;margin-right:8px;color:var(--primary-container)">location_on</span>Field Location</h2>
+          <div class="input-group">
+            <label for="input-location">City / District</label>
+            <div style="display:flex;gap:var(--space-sm)">
+              <input type="text" id="input-location" class="input-field" placeholder="e.g. Dharwad, Bangalore, Indore" style="flex:1" required>
+              <button type="button" class="btn btn--secondary" onclick="resolveLocation()" id="btn-resolve">
+                <span class="material-icons-outlined" style="font-size:18px">my_location</span> Resolve
+              </button>
+            </div>
+          </div>
+          <div id="location-result" style="display:none"></div>
+          <!-- Enrichment tiles -->
+          <div class="enrichment-grid" id="enrichment-grid" style="display:none">
+            <div class="enrichment-tile enrichment-tile--rain">
+              <div class="label-caps enrichment-tile__label">Rainfall</div>
+              <div><span class="enrichment-tile__value" id="val-rainfall">--</span><span class="enrichment-tile__unit">mm</span></div>
+            </div>
+            <div class="enrichment-tile enrichment-tile--temp">
+              <div class="label-caps enrichment-tile__label">Temperature</div>
+              <div><span class="enrichment-tile__value" id="val-temperature">--</span><span class="enrichment-tile__unit">°C</span></div>
+            </div>
+            <div class="enrichment-tile enrichment-tile--humid">
+              <div class="label-caps enrichment-tile__label">Humidity</div>
+              <div><span class="enrichment-tile__value" id="val-humidity">--</span><span class="enrichment-tile__unit">%</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- N-P-K -->
+        <div class="card">
+          <h2 class="headline-md" style="margin-bottom:var(--space-md)"><span class="material-icons-outlined" style="vertical-align:middle;margin-right:8px;color:var(--soil-brown)">science</span>Soil N-P-K</h2>
+          <div class="flex flex-col gap-md">
+            <div class="input-group"><label for="input-n">Nitrogen (N)</label><input type="number" id="input-n" class="input-field" placeholder="e.g. 90" min="0" max="200" value="90"></div>
+            <div class="input-group"><label for="input-p">Phosphorus (P)</label><input type="number" id="input-p" class="input-field" placeholder="e.g. 42" min="0" max="200" value="42"></div>
+            <div class="input-group"><label for="input-k">Potassium (K)</label><input type="number" id="input-k" class="input-field" placeholder="e.g. 43" min="0" max="200" value="43"></div>
+          </div>
+        </div>
+
+        <!-- pH -->
+        <div class="card">
+          <h2 class="headline-md" style="margin-bottom:var(--space-md)"><span class="material-icons-outlined" style="vertical-align:middle;margin-right:8px;color:var(--gold)">biotech</span>Soil Profile</h2>
+          <div class="input-group">
+            <label for="input-ph">Soil pH</label>
+            <input type="number" id="input-ph" class="input-field" placeholder="e.g. 6.5" min="0" max="14" step="0.1" value="6.5">
+          </div>
+          <div style="margin-top:var(--space-lg)">
+            <button type="submit" class="btn btn--primary" style="width:100%" id="btn-analyze">
+              <span class="material-icons-outlined" style="font-size:20px">psychology</span> Generate Strategic Recommendation
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <!-- ═══ RESULTS ═══ -->
+      <div id="results-section" style="display:none;margin-top:var(--space-xl)">
+        <!-- Hero Recommendation -->
+        <div class="recommendation-hero" id="recommendation-hero">
+          <div class="label-caps" style="color:var(--primary-fixed-dim);margin-bottom:var(--space-sm)">#1 Strategic Recommendation</div>
+          <div class="recommendation-hero__crop" id="hero-crop">--</div>
+          <div class="recommendation-hero__subtitle" id="hero-subtitle"></div>
+          <div class="badges-row" id="badges-row"></div>
+        </div>
+
+        <!-- Regenerative Banner -->
+        <div id="regen-section" style="display:none">
+          <div class="regen-banner">
+            <div class="regen-banner__icon">🌿</div>
+            <div>
+              <div class="label-caps" style="color:var(--growth-green);margin-bottom:4px">Regenerative Agriculture Advisory</div>
+              <div class="regen-banner__title" id="regen-title"></div>
+              <div class="regen-banner__text" id="regen-text"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="stats-row" id="stats-row"></div>
+
+        <!-- Alternatives -->
+        <h2 class="headline-md" style="margin-top:var(--space-xl)">Alternative Candidates</h2>
+        <div class="alternatives-grid" id="alternatives-grid"></div>
+      </div>
+    </section>
+
+    <!-- ═══ MARKET PAGE ═══ -->
+    <section class="page-section" id="page-market">
+      <div class="section-header">
+        <h1 class="headline-lg section-header__title">Market Intelligence</h1>
+        <p class="body-md section-header__subtitle">Real-time Mandi price tracking and profitability projections.</p>
+      </div>
+      <div id="market-content">
+        <div class="empty-state">
+          <div class="empty-state__icon">📊</div>
+          <div class="empty-state__title">No Market Data Yet</div>
+          <p class="body-md">Generate a strategic recommendation from the Dashboard first to see live market intelligence.</p>
+        </div>
+      </div>
+      <div id="market-insights-section" style="display:none;margin-top:var(--space-xl)">
+        <h2 class="headline-md">Global Pulse</h2>
+        <div id="market-insights" class="mt-md"></div>
+      </div>
+    </section>
+
+    <!-- ═══ RESEARCH PAGE ═══ -->
+    <section class="page-section" id="page-research">
+      <div class="section-header">
+        <h1 class="headline-lg section-header__title">Explainable AI Deep-Dive</h1>
+        <p class="body-md section-header__subtitle">Deconstructing neural weightings and market volatility vectors for transparent recommendations.</p>
+      </div>
+      <div id="research-content">
+        <div class="empty-state">
+          <div class="empty-state__icon">🔬</div>
+          <div class="empty-state__title">Research Mode Awaiting Data</div>
+          <p class="body-md">Generate a recommendation to activate XAI graphs.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="spinner spinner--lg"></div>
+    <div class="loading-overlay__text">Analyzing Agronomic Parameters</div>
+    <div class="loading-overlay__step" id="loading-step">Resolving coordinates...</div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
