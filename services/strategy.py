@@ -2,6 +2,7 @@
 Strategy Engine — Combines biological predictions with economic data
 to produce actionable strategic recommendations.
 """
+from services.rag_engine import rag_engine
 
 
 class StrategyEngine:
@@ -94,21 +95,30 @@ class StrategyEngine:
                     "description": f"Current supply of {primary['crop'].title()} is {primary['supply_level']}, indicating strong market demand."
                 })
 
-        # Regenerative Agriculture Check
+        # Regenerative Agriculture Check (Now powered by RAG Engine)
         regenerative_pairing = None
+        rag_insight = None
         if primary:
-            companion = self.soil_depleting.get(primary["crop"].lower())
-            if companion:
-                companion_price = mandi_prices.get(companion, {})
-                regenerative_pairing = {
-                    "primary_crop": primary["crop"],
-                    "companion_crop": companion,
-                    "reason": f"{primary['crop'].title()} is classified as soil-depleting. "
-                              f"Pairing with {companion.title()} (a nitrogen-fixing legume) "
-                              f"will restore soil health over a 4-month rotation cycle.",
-                    "companion_price": companion_price.get("price", 0),
-                    "nitrogen_boost": "22%",
-                }
+            # Query the RAG FAISS Index
+            weather_ctx = f"Temp: {input_data.get('temperature')}C, Rain: {input_data.get('rainfall')}mm"
+            rag_data = rag_engine.retrieve(primary["crop"], weather_ctx)
+            
+            rag_insight = {
+                "source": rag_data["source"],
+                "chunk": rag_data["chunk"],
+                "export": rag_data["export"]
+            }
+
+            # Update the regenerative pairing using RAG data
+            companion = rag_data.get("intercrop", self.soil_depleting.get(primary["crop"].lower(), "Legumes"))
+            companion_price = mandi_prices.get(companion.lower(), {})
+            regenerative_pairing = {
+                "primary_crop": primary["crop"],
+                "companion_crop": companion,
+                "reason": rag_data.get("reason", "Enhances soil biodiversity and fixes nitrogen naturally."),
+                "companion_price": companion_price.get("price", 0),
+                "nitrogen_boost": "Estimated 20-30%",
+            }
 
         # Market Insights
         market_insights = []
@@ -136,6 +146,7 @@ class StrategyEngine:
             "alternatives": profit_index[1:],
             "trust_badges": trust_badges,
             "regenerative_pairing": regenerative_pairing,
+            "rag_insight": rag_insight,
             "profit_index": profit_index,
             "market_insights": market_insights,
             "feature_importance": feature_importance,

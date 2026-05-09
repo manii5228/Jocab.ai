@@ -307,7 +307,22 @@ function renderResearchPage() {
   const metrics = state.modelMetrics || data.training_metrics || {};
 
   const container = document.getElementById('research-content');
+  const rag = data.rag_insight || {};
+  
   container.innerHTML = `
+    <!-- RAG Explainable Intelligence -->
+    <div class="chart-card" style="border-left:4px solid var(--tertiary-container); margin-bottom: var(--space-lg)">
+      <div class="chart-card__header">
+        <div class="chart-card__icon" style="background:var(--tertiary-fixed); color:var(--tertiary-container)"><span class="material-icons-outlined">library_books</span></div>
+        <div><div class="headline-md">Explainable Intelligence (RAG)</div><div class="body-sm" style="color:var(--on-surface-variant)">Hybrid Dense Retrieval via FAISS + sentence-transformers</div></div>
+      </div>
+      
+      <div style="background:var(--surface-container-low); padding:var(--space-md); border-radius:var(--radius); margin-bottom:var(--space-md); border: 1px solid var(--outline-variant)">
+        <div style="margin-bottom:var(--space-sm)"><strong>The Prediction:</strong> <span style="color:var(--primary); font-weight:700">${cap(data.primary_recommendation.crop)} (${data.primary_recommendation.confidence}% Confidence)</span></div>
+        <div style="margin-bottom:var(--space-sm)"><strong>The Source:</strong> <span style="color:var(--water-blue)">${rag.source || 'Aggregated APEDA / ICAR'}</span></div>
+        <div><strong>The RAG Strategy:</strong> <span style="font-style:italic; color:var(--on-surface-variant)">"Based on the retrieved context, the optimal regenerative intercropping pair is <strong>${data.regenerative_pairing ? cap(data.regenerative_pairing.companion_crop) : 'Legumes'}</strong>. ${rag.chunk ? rag.chunk : ''}"</span></div>
+      </div>
+    </div>
     <!-- Model Training Metrics -->
     <div class="chart-card" style="border-left:4px solid var(--primary-container)">
       <div class="chart-card__header">
